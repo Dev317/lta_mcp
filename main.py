@@ -8,6 +8,7 @@ from tools.lta import LTAService
 PORT = int(os.getenv("PORT", 8000))
 mcp = FastMCP(
     name="lta",
+    stateless_http=True,
     transport_security=TransportSecuritySettings(enable_dns_rebinding_protection=False),
     port=PORT,
 )
