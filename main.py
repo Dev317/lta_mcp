@@ -1,10 +1,12 @@
 import os
+
 from mcp.server.fastmcp import FastMCP
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from tools.lta import LTAService
 
 PORT = int(os.getenv("PORT", 8000))
-mcp = FastMCP(name="lta", stateless_http=True, port=PORT)
+mcp = FastMCP(name="lta", port=PORT)
 
 lta_service = LTAService()
 
@@ -22,3 +24,4 @@ async def get_bus_stops() -> str:
 
 
 app = mcp.streamable_http_app()
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["*"])
