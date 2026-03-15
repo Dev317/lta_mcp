@@ -1,8 +1,10 @@
+import os
 from mcp.server.fastmcp import FastMCP
 
-from lib.lta import LTAService
+from tools.lta import LTAService
 
-mcp = FastMCP(name="lta", stateless_http=True)
+PORT = int(os.getenv("PORT", 8000))
+mcp = FastMCP(name="lta", stateless_http=True, port=PORT)
 
 lta_service = LTAService()
 
