@@ -21,5 +21,4 @@ async def get_bus_stops() -> str:
     return result
 
 
-if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+app = mcp.streamable_http_app()

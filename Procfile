@@ -1,1 +1,1 @@
-web: uv run python main.py
+web: uv run uvicorn main:app --host 0.0.0.0 --port $PORT
