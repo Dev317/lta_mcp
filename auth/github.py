@@ -17,10 +17,10 @@ from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
 # TTLs in seconds
-_TTL_PENDING_AUTH = 600    # 10 min
-_TTL_AUTH_CODE = 300       # 5 min
-_TTL_ACCESS_TOKEN = 3600   # 1 hour
-_TTL_CLIENT = 0            # no expiry
+_TTL_PENDING_AUTH = 600  # 10 min
+_TTL_AUTH_CODE = 300  # 5 min
+_TTL_ACCESS_TOKEN = 3600  # 1 hour
+_TTL_CLIENT = 0  # no expiry
 
 
 def _key(prefix: str, value: str) -> str:
@@ -35,7 +35,13 @@ class PendingAuth:
 
 
 class GitHubOAuthProvider:
-    def __init__(self, github_client_id: str, github_client_secret: str, server_url: str, redis: Redis):
+    def __init__(
+        self,
+        github_client_id: str,
+        github_client_secret: str,
+        server_url: str,
+        redis: Redis,
+    ):
         self.github_client_id = github_client_id
         self.github_client_secret = github_client_secret
         self.server_url = server_url.rstrip("/")
@@ -57,11 +63,13 @@ class GitHubOAuthProvider:
         return OAuthClientInformationFull.model_validate_json(raw)
 
     def _pending_dump(self, pending: PendingAuth) -> str:
-        return json.dumps({
-            "client": json.loads(pending.client.model_dump_json()),
-            "params": json.loads(pending.params.model_dump_json()),
-            "created_at": pending.created_at,
-        })
+        return json.dumps(
+            {
+                "client": json.loads(pending.client.model_dump_json()),
+                "params": json.loads(pending.params.model_dump_json()),
+                "created_at": pending.created_at,
+            }
+        )
 
     def _pending_load(self, raw: str) -> PendingAuth:
         data = json.loads(raw)
@@ -98,9 +106,13 @@ class GitHubOAuthProvider:
         return self._client_load(raw) if raw else None
 
     async def register_client(self, client_info: OAuthClientInformationFull) -> None:
-        await self._redis.set(_key("client", client_info.client_id), self._client_dump(client_info))
+        await self._redis.set(
+            _key("client", client_info.client_id), self._client_dump(client_info)
+        )
 
-    async def authorize(self, client: OAuthClientInformationFull, params: AuthorizationParams) -> str:
+    async def authorize(
+        self, client: OAuthClientInformationFull, params: AuthorizationParams
+    ) -> str:
         github_state = secrets.token_urlsafe(32)
         pending = PendingAuth(client=client, params=params)
         await self._redis.set(
@@ -110,16 +122,13 @@ class GitHubOAuthProvider:
         )
 
         callback_url = f"{self.server_url}/github/callback"
-        return (
-            "https://github.com/login/oauth/authorize?"
-            + urllib.parse.urlencode(
-                {
-                    "client_id": self.github_client_id,
-                    "redirect_uri": callback_url,
-                    "scope": "read:user",
-                    "state": github_state,
-                }
-            )
+        return "https://github.com/login/oauth/authorize?" + urllib.parse.urlencode(
+            {
+                "client_id": self.github_client_id,
+                "redirect_uri": callback_url,
+                "scope": "read:user",
+                "state": github_state,
+            }
         )
 
     async def handle_github_callback(self, request: Request) -> Response:
@@ -174,7 +183,11 @@ class GitHubOAuthProvider:
 
         redirect_uri = str(pending.params.redirect_uri)
         qs = urllib.parse.urlencode(
-            {k: v for k, v in {"code": auth_code, "state": pending.params.state}.items() if v is not None}
+            {
+                k: v
+                for k, v in {"code": auth_code, "state": pending.params.state}.items()
+                if v is not None
+            }
         )
         separator = "&" if "?" in redirect_uri else "?"
         return RedirectResponse(url=f"{redirect_uri}{separator}{qs}", status_code=302)
@@ -226,7 +239,9 @@ class GitHubOAuthProvider:
             token_type="Bearer",
             expires_in=_TTL_ACCESS_TOKEN,
             refresh_token=refresh_token,
-            scope=" ".join(authorization_code.scopes) if authorization_code.scopes else None,
+            scope=" ".join(authorization_code.scopes)
+            if authorization_code.scopes
+            else None,
         )
 
     async def load_refresh_token(
