@@ -17,9 +17,17 @@ class LTAService:
 
     async def list_bus_stops(self) -> str:
         try:
-            response = await self.client.get("/BusStops")
-            response.raise_for_status()
-            data = response.json()
+            all_stops = []
+            skip = 0
+            while True:
+                response = await self.client.get("/BusStops", params={"$skip": skip})
+                response.raise_for_status()
+                data = response.json()
+                batch = data["value"]
+                if not batch:
+                    break
+                all_stops.extend(batch)
+                skip += 500
 
             formatted_result = "\n".join(
                 [
@@ -30,7 +38,7 @@ class LTAService:
                     Latitude: {bus_stop["Latitude"]}
                     Longitude: {bus_stop["Longitude"]}
                     """
-                    for bus_stop in data["value"]
+                    for bus_stop in all_stops
                 ]
             )
 
