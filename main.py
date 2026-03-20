@@ -5,6 +5,7 @@ from mcp.server.auth.settings import AuthSettings, ClientRegistrationOptions
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 from pydantic import AnyHttpUrl, TypeAdapter
+from redis.asyncio import Redis
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -18,10 +19,17 @@ SERVER_URL: AnyHttpUrl = TypeAdapter(AnyHttpUrl).validate_python(
     os.getenv("SERVER_URL", f"http://localhost:{PORT}")
 )
 
+redis = Redis.from_url(
+    os.getenv("REDIS_URL", "redis://localhost:6379"),
+    decode_responses=True,
+    ssl_cert_reqs=None,  # DO managed Redis uses self-signed-like certs
+)
+
 github_provider = GitHubOAuthProvider(
     github_client_id=os.environ["GITHUB_CLIENT_ID"],
     github_client_secret=os.environ["GITHUB_CLIENT_SECRET"],
     server_url=str(SERVER_URL),
+    redis=redis,
 )
 
 mcp = FastMCP(
